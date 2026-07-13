@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trip Ledger — Settle Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1C2B2A;
+    --ink-soft:#51625F;
+    --paper:#EDF1EC;
+    --card:#FFFFFF;
+    --line:#D6DED6;
+    --teal:#0F6B5C;
+    --teal-dark:#0B554A;
+    --owes:#B3442E;
+    --gets:#0F6B5C;
+    --marigold:#F2B84B;
+    --radius:14px;
+    --display:"Bricolage Grotesque",system-ui,sans-serif;
+    --body:"Public Sans",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{animation:none!important;transition:none!important}
+  }
+  body{
+    font-family:var(--body);
+    color:var(--ink);
+    background:var(--paper);
+    background-image:radial-gradient(#c9d3c9 1px,transparent 1px);
+    background-size:26px 26px;
+    min-height:100vh;
+    padding:32px 16px 72px;
+  }
+  .wrap{max-width:860px;margin:0 auto}
+
+  /* ---------- Header ---------- */
+  header{margin-bottom:28px}
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--teal);margin-bottom:10px;
+  }
+  h1{
+    font-family:var(--display);font-weight:800;
+    font-size:clamp(34px,6vw,54px);line-height:1.02;letter-spacing:-.01em;
+  }
+  h1 .accent{color:var(--teal)}
+  .sub{margin-top:10px;color:var(--ink-soft);font-size:15px;max-width:52ch}
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;margin-bottom:18px;
+    box-shadow:0 1px 2px rgba(28,43,42,.05);
+  }
+  .card h2{
+    font-family:var(--display);font-weight:600;font-size:18px;margin-bottom:4px;
+  }
+  .card .hint{color:var(--ink-soft);font-size:13px;margin-bottom:16px}
+
+  .controls{display:flex;gap:14px;flex-wrap:wrap}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft)}
+  select,input{
+    font-family:var(--body);font-size:15px;color:var(--ink);
+    background:#FBFCFA;border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;min-width:0;
+  }
+  select{cursor:pointer;min-width:170px}
+  select:focus-visible,input:focus-visible,button:focus-visible{
+    outline:2px solid var(--teal);outline-offset:2px;
+  }
+  input::placeholder{color:#9AA8A2}
+  input[type=number]{font-family:var(--mono);font-size:14px}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  input[type=number]{-moz-appearance:textfield;appearance:textfield}
+
+  /* ---------- People rows ---------- */
+  #peopleCard{display:none}
+  .rows-head{
+    display:grid;grid-template-columns:34px 1fr 88px 170px;gap:10px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-soft);padding:0 2px 8px;
+  }
+  .row{
+    display:grid;grid-template-columns:34px 1fr 88px 170px;gap:10px;align-items:center;
+    padding:6px 0;
+  }
+  .row select{
+    min-width:0;width:100%;padding:10px 6px;text-align:center;
+    font-family:var(--mono);font-size:13px;
+  }
+  .row .idx{
+    font-family:var(--mono);font-size:13px;color:var(--ink-soft);text-align:right;padding-right:2px;
+  }
+  .amt-wrap{position:relative}
+  .amt-wrap .sym{
+    position:absolute;left:11px;top:50%;transform:translateY(-50%);
+    font-family:var(--mono);font-size:13px;color:var(--ink-soft);pointer-events:none;
+  }
+  .amt-wrap input{width:100%;padding-left:28px}
+  .row input.error{border-color:var(--owes);background:#FBF1EE}
+
+  .actions{display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap}
+  .btn-primary{
+    font-family:var(--display);font-weight:600;font-size:16px;color:#fff;
+    background:var(--teal);border:none;border-radius:12px;
+    padding:13px 26px;cursor:pointer;transition:background .15s ease,transform .1s ease;
+  }
+  .btn-primary:hover{background:var(--teal-dark)}
+  .btn-primary:active{transform:scale(.98)}
+  .btn-ghost{
+    font-family:var(--body);font-size:14px;color:var(--ink-soft);
+    background:none;border:none;cursor:pointer;text-decoration:underline;
+    text-underline-offset:3px;padding:8px;
+  }
+  .btn-ghost:hover{color:var(--ink)}
+  .form-msg{color:var(--owes);font-size:13px;font-weight:500;display:none}
+
+  /* ---------- Receipt (signature element) ---------- */
+  #receiptSection{display:none;margin-top:26px}
+  .receipt{
+    position:relative;background:var(--card);
+    border:1px solid var(--line);border-bottom:none;
+    border-radius:6px 6px 0 0;
+    padding:26px 26px 64px;
+    box-shadow:0 10px 24px rgba(28,43,42,.10);
+    font-family:var(--mono);font-size:13.5px;line-height:1.65;
+  }
+  .receipt::before{ /* punched perforation strip */
+    content:"";position:absolute;top:10px;left:26px;right:26px;height:1px;
+    background:repeating-linear-gradient(90deg,var(--line) 0 8px,transparent 8px 16px);
+  }
+  .tear{ /* torn zigzag bottom edge */
+    height:14px;filter:drop-shadow(0 6px 6px rgba(28,43,42,.08));
+    background:
+      linear-gradient(135deg,var(--card) 7.5px,transparent 0) 0 0,
+      linear-gradient(-135deg,var(--card) 7.5px,transparent 0) 7px 0;
+    background-size:14px 14px;background-repeat:repeat-x;
+  }
+  .r-head{text-align:center;margin-bottom:14px;padding-top:8px}
+  .r-head .stamp{
+    display:inline-block;font-size:11px;letter-spacing:.24em;font-weight:600;
+    color:var(--teal);border:1.5px solid var(--teal);border-radius:4px;
+    padding:4px 12px;transform:rotate(-1.5deg);margin-bottom:10px;
+  }
+  .r-head .r-title{font-family:var(--display);font-size:21px;font-weight:800;letter-spacing:.01em}
+  .r-head .r-date{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
+  .r-rule{border:none;border-top:1px dashed var(--line);margin:13px 0}
+  .r-line{display:flex;justify-content:space-between;gap:12px}
+  .r-line .lbl{color:var(--ink-soft)}
+  .r-line .val{font-weight:600;text-align:right}
+  .r-sect{
+    font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--ink-soft);margin:14px 0 6px;
+  }
+  .bal-line .val.gets{color:var(--gets)}
+  .bal-line .val.owes{color:var(--owes)}
+  .txn{
+    display:flex;justify-content:space-between;gap:12px;
+    padding:7px 0;border-bottom:1px dotted var(--line);
+  }
+  .txn:last-of-type{border-bottom:none}
+  .txn .who b{font-weight:600}
+  .txn .arrow{color:var(--marigold);font-weight:600;padding:0 4px}
+  .txn .amt{font-weight:600;white-space:nowrap}
+  .settled-note{
+    text-align:center;color:var(--gets);font-weight:600;padding:10px 0 2px;
+  }
+  .r-foot{
+    text-align:center;font-size:11px;color:var(--ink-soft);
+    letter-spacing:.14em;margin-top:16px;
+  }
+  #copyBtn{
+    position:absolute;right:16px;bottom:16px;
+    font-family:var(--body);font-size:13px;font-weight:600;
+    color:var(--teal);background:#EFF6F3;border:1px solid #C7DDD5;
+    border-radius:9px;padding:8px 14px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
+    transition:background .15s ease;
+  }
+  #copyBtn:hover{background:#E2EFEA}
+  #copyBtn.copied{color:#fff;background:var(--teal);border-color:var(--teal)}
+
+  footer{margin-top:34px;text-align:center;font-size:12px;color:var(--ink-soft)}
+
+  @media (max-width:560px){
+    .rows-head{grid-template-columns:22px 1fr 58px 104px}
+    .row{grid-template-columns:22px 1fr 58px 104px}
+    .receipt{padding:22px 16px 64px}
+    .card{padding:16px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Group Trip · Expense Ledger</div>
+    <h1>Settle the trip,<br><span class="accent">skip the awkward math.</span></h1>
+    <p class="sub">Enter what each person actually paid during the trip. Costs are split equally, and you get the fewest possible payments to make everyone even.</p>
+  </header>
+
+  <section class="card">
+    <h2>1 · Set up the group</h2>
+    <p class="hint">Choose how many <b>payers</b> there are. One payer can cover more than one person — e.g., you paying for yourself + a friend counts as one payer covering 2.</p>
+    <div class="controls">
+      <div class="field">
+        <label for="numPeople">Number of payers</label>
+        <select id="numPeople">
+          <option value="" selected disabled>Select payers…</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="currency">Currency</label>
+        <select id="currency">
+          <option value="₹" selected>₹ — Indian Rupee</option>
+          <option value="$">$ — Dollar</option>
+          <option value="€">€ — Euro</option>
+          <option value="£">£ — Pound</option>
+          <option value="¥">¥ — Yen</option>
+          <option value="د.إ">د.إ — Dirham</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" id="peopleCard">
+    <h2>2 · Who paid what</h2>
+    <p class="hint">Total each payer spent for the group. Set <b>Covers</b> to how many people that payment entry stands for (yourself = 1; you + a friend as one = 2). Costs split by total headcount.</p>
+    <div class="rows-head"><span>#</span><span>Name</span><span>Covers</span><span>Total paid</span></div>
+    <div id="rows"></div>
+    <p class="hint" id="headCount" style="margin:10px 0 0"></p>
+    <div class="actions">
+      <button class="btn-primary" id="calcBtn">Calculate settlement</button>
+      <button class="btn-ghost" id="resetBtn" type="button">Reset all</button>
+      <span class="form-msg" id="formMsg"></span>
+    </div>
+  </section>
+
+  <section id="receiptSection">
+    <div class="receipt" id="receipt">
+      <div class="r-head">
+        <span class="stamp">SETTLEMENT RECEIPT</span>
+        <div class="r-title" id="rTitle">Trip Settlement</div>
+        <div class="r-date" id="rDate"></div>
+      </div>
+      <div id="rBody"></div>
+      <div class="r-foot">— THANK YOU · TRAVEL AGAIN SOON —</div>
+      <button id="copyBtn" type="button" aria-label="Copy settlement summary">⧉ Copy summary</button>
+    </div>
+    <div class="tear"></div>
+  </section>
+
+  <footer>Equal split · rounded to 2 decimals · payments minimised</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var MAX_PEOPLE = 30;
+  var people = [];        // [{name:"", amount:"", covers:"1"}] — survives count changes
+  var copyText = "";      // plain-text summary for the copy button
+
+  var numSel   = document.getElementById("numPeople");
+  var curSel   = document.getElementById("currency");
+  var card     = document.getElementById("peopleCard");
+  var rowsEl   = document.getElementById("rows");
+  var headEl   = document.getElementById("headCount");
+  var calcBtn  = document.getElementById("calcBtn");
+  var resetBtn = document.getElementById("resetBtn");
+  var formMsg  = document.getElementById("formMsg");
+  var section  = document.getElementById("receiptSection");
+  var rBody    = document.getElementById("rBody");
+  var rDate    = document.getElementById("rDate");
+  var copyBtn  = document.getElementById("copyBtn");
+
+  /* ---- populate the payers dropdown (2..30) ---- */
+  for (var i = 2; i <= MAX_PEOPLE; i++) {
+    var opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = i + " payers";
+    numSel.appendChild(opt);
+  }
+
+  function symbol(){ return curSel.value; }
+
+  function fmt(cents){
+    var v = Math.abs(cents) / 100;
+    var locale = symbol() === "₹" ? "en-IN" : "en-US";
+    return symbol() + v.toLocaleString(locale, {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  function esc(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function updateHeadCount(){
+    var total = 0;
+    for (var i = 0; i < people.length; i++) total += parseInt(people[i].covers, 10) || 1;
+    headEl.innerHTML = "Total people on trip: <b>" + total + "</b> (" + people.length + " payers)";
+  }
+
+  /* ---- build name + covers + amount rows, preserving anything already typed ---- */
+  function renderRows(n){
+    while (people.length < n) people.push({name:"", amount:"", covers:"1"});
+    people.length = n;
+    rowsEl.innerHTML = "";
+    for (var i = 0; i < n; i++) (function(i){
+      var row = document.createElement("div");
+      row.className = "row";
+
+      var idx = document.createElement("span");
+      idx.className = "idx";
+      idx.textContent = String(i + 1).padStart(2, "0");
+
+      var name = document.createElement("input");
+      name.type = "text";
+      name.placeholder = "Person " + (i + 1);
+      name.autocomplete = "off";
+      name.setAttribute("aria-label", "Name of payer " + (i + 1));
+      name.value = people[i].name;
+      name.addEventListener("input", function(){ people[i].name = name.value; });
+
+      var covers = document.createElement("select");
+      covers.setAttribute("aria-label", "People covered by payer " + (i + 1));
+      for (var c = 1; c <= 10; c++) {
+        var co = document.createElement("option");
+        co.value = c;
+        co.textContent = c === 1 ? "1" : "×" + c;
+        covers.appendChild(co);
+      }
+      covers.value = people[i].covers || "1";
+      covers.addEventListener("change", function(){
+        people[i].covers = covers.value;
+        updateHeadCount();
+      });
+
+      var wrap = document.createElement("div");
+      wrap.className = "amt-wrap";
+      var sym = document.createElement("span");
+      sym.className = "sym";
+      sym.textContent = symbol();
+      var amt = document.createElement("input");
+      amt.type = "number";
+      amt.min = "0";
+      amt.step = "0.01";
+      amt.inputMode = "decimal";
+      amt.placeholder = "0.00";
+      amt.setAttribute("aria-label", "Total paid by payer " + (i + 1));
+      amt.value = people[i].amount;
+      amt.addEventListener("input", function(){
+        people[i].amount = amt.value;
+        amt.classList.remove("error");
+      });
+      wrap.appendChild(sym);
+      wrap.appendChild(amt);
+
+      row.appendChild(idx);
+      row.appendChild(name);
+      row.appendChild(covers);
+      row.appendChild(wrap);
+      rowsEl.appendChild(row);
+    })(i);
+    updateHeadCount();
+    card.style.display = "block";
+  }
+
+  numSel.addEventListener("change", function(){
+    renderRows(parseInt(numSel.value, 10));
+    formMsg.style.display = "none";
+  });
+
+  curSel.addEventListener("change", function(){
+    var syms = rowsEl.querySelectorAll(".sym");
+    for (var i = 0; i < syms.length; i++) syms[i].textContent = symbol();
+  });
+
+  resetBtn.addEventListener("click", function(){
+    people = [];
+    numSel.selectedIndex = 0;
+    card.style.display = "none";
+    section.style.display = "none";
+    rowsEl.innerHTML = "";
+    formMsg.style.display = "none";
+  });
+
+  /* ---------- calculation ---------- */
+  calcBtn.addEventListener("click", function(){
+    var n = people.length;
+    if (!n) return;
+    formMsg.style.display = "none";
+
+    var amtInputs = rowsEl.querySelectorAll('input[type="number"]');
+    var entries = [];
+    var usedNames = {};
+    var bad = false;
+
+    for (var i = 0; i < n; i++) {
+      var raw = (people[i].amount || "").trim();
+      var val = raw === "" ? 0 : parseFloat(raw);
+      if (isNaN(val) || val < 0) {
+        amtInputs[i].classList.add("error");
+        bad = true;
+        continue;
+      }
+      var nm = (people[i].name || "").trim() || ("Person " + (i + 1));
+      if (usedNames[nm.toLowerCase()]) {
+        usedNames[nm.toLowerCase()] += 1;
+        nm = nm + " (" + usedNames[nm.toLowerCase()] + ")";
+      } else {
+        usedNames[nm.toLowerCase()] = 1;
+      }
+      var heads = parseInt(people[i].covers, 10) || 1;
+      entries.push({ name: nm, cents: Math.round(val * 100), heads: heads });
+    }
+    if (bad) {
+      formMsg.textContent = "Amounts must be positive numbers — check the highlighted boxes.";
+      formMsg.style.display = "inline";
+      return;
+    }
+
+    var total = 0, totalHeads = 0;
+    for (var t = 0; t < entries.length; t++) {
+      total += entries[t].cents;
+      totalHeads += entries[t].heads;
+    }
+
+    if (total === 0) {
+      formMsg.textContent = "Enter at least one expense before calculating.";
+      formMsg.style.display = "inline";
+      return;
+    }
+
+    /* equal split per HEAD in integer paise/cents; spread leftover cents to keep the sum exact */
+    var baseShare = Math.floor(total / totalHeads);
+    var leftover  = total - baseShare * totalHeads; // 0..totalHeads-1 extra cents
+    var headsSoFar = 0;
+    var balances = entries.map(function(e){
+      var extra = Math.max(0, Math.min(leftover - headsSoFar, e.heads));
+      var share = baseShare * e.heads + extra;
+      headsSoFar += e.heads;
+      return { name: e.name, paid: e.cents, heads: e.heads, cents: e.cents - share };
+    });
+
+    /* greedy settlement: biggest debtor pays biggest creditor — at most n-1 payments */
+    var debtors = balances.filter(function(b){ return b.cents < 0; })
+                          .map(function(b){ return { name: b.name, cents: b.cents }; })
+                          .sort(function(a, b){ return a.cents - b.cents; });
+    var creditors = balances.filter(function(b){ return b.cents > 0; })
+                            .map(function(b){ return { name: b.name, cents: b.cents }; })
+                            .sort(function(a, b){ return b.cents - a.cents; });
+    var txns = [];
+    var di = 0, ci = 0;
+    while (di < debtors.length && ci < creditors.length) {
+      var pay = Math.min(-debtors[di].cents, creditors[ci].cents);
+      if (pay > 0) txns.push({ from: debtors[di].name, to: creditors[ci].name, cents: pay });
+      debtors[di].cents += pay;
+      creditors[ci].cents -= pay;
+      if (debtors[di].cents === 0) di++;
+      if (creditors[ci].cents === 0) ci++;
+    }
+
+    renderReceipt(entries.length, totalHeads, total, total / totalHeads, balances, txns);
+  });
+
+  /* ---------- receipt rendering ---------- */
+  function renderReceipt(nPayers, totalHeads, totalCents, shareCentsFloat, balances, txns){
+    var now = new Date();
+    rDate.textContent = now.toLocaleDateString(undefined, { day:"2-digit", month:"short", year:"numeric" })
+                      + " · " + now.toLocaleTimeString(undefined, { hour:"2-digit", minute:"2-digit" });
+
+    var shareStr = fmt(Math.round(shareCentsFloat));
+    var html = "";
+
+    html += '<div class="r-line"><span class="lbl">Total trip spend</span><span class="val">' + fmt(totalCents) + '</span></div>';
+    html += '<div class="r-line"><span class="lbl">People on trip</span><span class="val">' + totalHeads + (nPayers !== totalHeads ? ' (' + nPayers + ' payers)' : '') + '</span></div>';
+    html += '<div class="r-line"><span class="lbl">Fair share / person</span><span class="val">' + shareStr + '</span></div>';
+    html += '<hr class="r-rule">';
+
+    html += '<div class="r-sect">Balances</div>';
+    balances.forEach(function(b){
+      var cls = b.cents > 0 ? "gets" : (b.cents < 0 ? "owes" : "");
+      var tag = b.cents > 0 ? "gets back " : (b.cents < 0 ? "owes " : "settled ");
+      var amount = b.cents === 0 ? "✓" : tag + fmt(b.cents);
+      var headTag = b.heads > 1 ? ' ×' + b.heads : '';
+      var shareNote = b.heads > 1 ? ' · ' + b.heads + ' shares' : '';
+      html += '<div class="r-line bal-line"><span class="lbl">' + esc(b.name) + headTag
+            + ' <span style="opacity:.6">(paid ' + fmt(b.paid) + shareNote + ')</span></span>'
+            + '<span class="val ' + cls + '">' + amount + '</span></div>';
+    });
+
+    html += '<hr class="r-rule">';
+    html += '<div class="r-sect">Final settlement — ' + (txns.length ? txns.length + (txns.length === 1 ? " payment" : " payments") : "nothing due") + '</div>';
+
+    if (txns.length === 0) {
+      html += '<div class="settled-note">✦ All square! Everyone paid exactly their share. ✦</div>';
+    } else {
+      txns.forEach(function(t, i){
+        html += '<div class="txn"><span class="who">' + (i + 1) + '. <b>' + esc(t.from)
+              + '</b><span class="arrow">→</span><b>' + esc(t.to) + '</b></span>'
+              + '<span class="amt">' + fmt(t.cents) + '</span></div>';
+      });
+    }
+
+    rBody.innerHTML = html;
+    section.style.display = "block";
+    copyBtn.classList.remove("copied");
+    copyBtn.innerHTML = "⧉ Copy summary";
+
+    /* plain-text version for sharing */
+    var DIV = "━━━━━━━━━━━━━━━━━━━━";
+    var lines = [];
+    lines.push("🧾 TRIP SETTLEMENT");
+    lines.push(rDate.textContent);
+    lines.push(DIV);
+    lines.push("Total spend:  " + fmt(totalCents));
+    lines.push("People:       " + totalHeads
+             + (nPayers !== totalHeads ? " (" + nPayers + " payers)" : ""));
+    lines.push("Share/person: " + shareStr);
+    lines.push(DIV);
+    lines.push("BALANCES");
+    balances.forEach(function(b){
+      var headTag = b.heads > 1 ? " (covers " + b.heads + ")" : "";
+      lines.push("• " + b.name + headTag + " — paid " + fmt(b.paid));
+      lines.push(b.cents > 0 ? "   → gets back " + fmt(b.cents)
+               : b.cents < 0 ? "   → owes " + fmt(b.cents)
+               : "   → settled ✓");
+    });
+    lines.push(DIV);
+    lines.push("WHO PAYS WHOM");
+    if (txns.length === 0) {
+      lines.push("Nothing due — everyone paid exactly their share!");
+    } else {
+      txns.forEach(function(t, i){
+        lines.push((i + 1) + ". " + t.from + " → " + t.to + ": " + fmt(t.cents));
+      });
+    }
+    lines.push(DIV);
+    copyText = lines.join("\n");
+
+    section.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  /* ---------- copy button (clipboard API + fallback) ---------- */
+  copyBtn.addEventListener("click", function(){
+    function done(ok){
+      copyBtn.classList.toggle("copied", ok);
+      copyBtn.innerHTML = ok ? "✓ Copied!" : "Copy failed";
+      setTimeout(function(){
+        copyBtn.classList.remove("copied");
+        copyBtn.innerHTML = "⧉ Copy summary";
+      }, 2200);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(copyText).then(function(){ done(true); }, function(){ legacy(); });
+    } else {
+      legacy();
+    }
+    function legacy(){
+      var ta = document.createElement("textarea");
+      ta.value = copyText;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      done(ok);
+    }
+  });
+})();
+</script>
+</body>
+</html>

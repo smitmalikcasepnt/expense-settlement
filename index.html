@@ -304,8 +304,25 @@ footer{ margin-top:48px; font-size:12.5px; }
 }
 
 </style>
+<style id="es-landing-hero">
+/* ============================================================
+   LANDING (before payers are added): center the intro as a hero
+   + faint ring artwork, in the ORIGINAL pine/mint/marigold theme.
+   Reverts to normal document flow once the people card appears.
+   ============================================================ */
+body.es-landing{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  min-height:100dvh; padding-top:30px; padding-bottom:30px;
+}
+body.es-landing .wrap{ margin:0 auto; }
+body.es-landing::before{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.6;
+  background-repeat:no-repeat; background-position:center; background-size:cover;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='700' viewBox='0 0 1200 700'%3E%3Cg fill='none' stroke='%2342C79F' stroke-opacity='0.08' stroke-width='1.2'%3E%3Ccircle cx='250' cy='160' r='90'/%3E%3Ccircle cx='250' cy='160' r='155'/%3E%3Ccircle cx='250' cy='160' r='230'/%3E%3C/g%3E%3Cg fill='none' stroke='%23F5B94E' stroke-opacity='0.07' stroke-width='1.2'%3E%3Ccircle cx='980' cy='560' r='110'/%3E%3Ccircle cx='980' cy='560' r='185'/%3E%3C/g%3E%3C/svg%3E");
+}
+</style>
 </head>
-<body>
+<body class="es-landing">
 <div class="wrap">
 
   <header>
@@ -480,6 +497,7 @@ footer{ margin-top:48px; font-size:12.5px; }
     })(i);
     updateHeadCount();
     card.style.display = "block";
+    document.body.classList.remove('es-landing');
   }
 
   numSel.addEventListener("change", function(){
@@ -499,6 +517,7 @@ footer{ margin-top:48px; font-size:12.5px; }
     section.style.display = "none";
     rowsEl.innerHTML = "";
     formMsg.style.display = "none";
+    document.body.classList.add('es-landing');
   });
 
   /* ---------- calculation ---------- */
